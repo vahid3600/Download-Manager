@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">DownloadManager</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="start">Start</string>
+    <string name="pause">Pause</string>
+    <string name="stop">Stop</string>
+    <string name="queued">QUEUED</string>
+    <string name="added">ADDED</string>
+    <string name="downloading">downloading…</string>
+    <string name="status_unknown">Status Unknown</string>
+    <string name="percent_progress">%1$d%%</string>
+    <string name="download_eta_sec">%1$ds left</string>
+    <string name="download_eta_min">%1$dm %2$ds left</string>
+    <string name="download_eta_hrs">%1$dh %2$dm %3$ds left</string>
+    <string name="download_speed_bytes">%1$d B/s</string>
+    <string name="download_speed_kb">%1$s KB/s</string>
+    <string name="download_speed_mb">%1$s MB/s</string>
+    <string name="url1">https://www.sample-videos.com/download-sample-pdf.php</string>
+    <string name="url2">https://www.sample-videos.com/download-sample-text-file.php</string>
+    <string name="url3">www.pdf995.com/samples/pdf.pdf</string>
+    <string name="url4">www.africau.edu/images/default/sample.pdf</string>
+    <string name="url5">https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf</string>
+</resources>
