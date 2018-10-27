@@ -2,9 +2,11 @@ package com.example.user.downloadmanager.downloadmanager;
 
 public interface DownloadListener {
 
-    void pending(int soFarBytes, int totalBytes);
+    void error(int id, String message);
 
-    void progress(int soFarBytes, int totalBytes);
+    void pending(ProgressModel progressModel);
 
-    void completed(int fileSize);
+    void progress(ProgressModel progressModel);
+
+    void completed(ProgressModel progressModel);
 }

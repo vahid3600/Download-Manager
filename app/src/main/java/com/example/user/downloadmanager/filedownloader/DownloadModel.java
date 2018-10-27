@@ -2,19 +2,30 @@ package com.example.user.downloadmanager.filedownloader;
 
 public class DownloadModel {
 
+    private int id;
+
     private String url;
 
     private String path;
 
     private String avatar;
 
-    private ProgressbarModle progressbarModle;
+    private ProgressbarModel progressbarModle;
 
-    public DownloadModel(String url, String path, String avatar, ProgressbarModle progressbarModle) {
+    public DownloadModel(String url, String path, String avatar, int id, ProgressbarModel progressbarModle) {
         this.url = url;
         this.path = path;
         this.avatar = avatar;
+        this.id = id;
         this.progressbarModle = progressbarModle;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public void setUrl(String url) {
@@ -29,7 +40,7 @@ public class DownloadModel {
         this.avatar = avatar;
     }
 
-    public void setProgressbarModle(ProgressbarModle progressbarModle) {
+    public void setProgressbarModle(ProgressbarModel progressbarModle) {
         this.progressbarModle = progressbarModle;
     }
 
@@ -45,7 +56,7 @@ public class DownloadModel {
         return avatar;
     }
 
-    public ProgressbarModle getProgressbarModle() {
+    public ProgressbarModel getProgressbarModle() {
         return progressbarModle;
     }
 }

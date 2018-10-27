@@ -11,6 +11,7 @@ import android.util.Log;
 
 import com.example.user.downloadmanager.MainActivity;
 import com.example.user.downloadmanager.R;
+import com.example.user.downloadmanager.filedownloader.DownloadModel;
 import com.liulishuo.filedownloader.BaseDownloadTask;
 import com.liulishuo.filedownloader.FileDownloadQueueSet;
 import com.liulishuo.filedownloader.FileDownloader;
@@ -20,6 +21,7 @@ import com.liulishuo.filedownloader.notification.BaseNotificationItem;
 import com.liulishuo.filedownloader.notification.FileDownloadNotificationHelper;
 import com.liulishuo.filedownloader.notification.FileDownloadNotificationListener;
 import com.liulishuo.filedownloader.util.FileDownloadHelper;
+import com.liulishuo.filedownloader.util.FileDownloadUtils;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -27,11 +29,15 @@ import java.util.List;
 
 public class DownloadManager {
 
+    public static final String PROGRESS = "progress";
+    public static final String COMPLETED = "completed";
+    public static final String PENDING = "pending";
     private static final String TAG = "DownloadManager";
+    private static int downloadStackSize = 0;
     private static DownloadListener downloadListener;
     private static final FileDownloadNotificationHelper<NotificationItem> notificationHelper =
             new FileDownloadNotificationHelper<>();
-    final List<BaseDownloadTask> taskList = new ArrayList<>();
+    static final List<BaseDownloadTask> taskList = new ArrayList<>();
     FileDownloadQueueSet fileDownloadQueueSet;
     private static DownloadManager downloadManager;
     private static Context context;
@@ -61,41 +67,29 @@ public class DownloadManager {
                 ))
                 .commit();
 
+
         fileDownloadQueueSet = new FileDownloadQueueSet(notificationListener);
     }
 
-    public void downloadInit(Context context, String url, String path, boolean isDir) {
-        this.context = context;
-        this.path = path;
-        this.url = url;
-        this.isDir = isDir;
-    }
-
     public void addTaskDownload(String url, String path) {
+        downloadStackSize++;
         taskList.add(FileDownloader
                 .getImpl()
                 .create(url)
                 .setPath(path));
         fileDownloadQueueSet.downloadSequentially(taskList);
+        Log.e(TAG, "addTaskDownload: "+taskList.size() );
     }
 
     public void startDownloadList() {
-        fileDownloadQueueSet
-                .setCallbackProgressTimes(1)
-                .start();
+        if (taskList.size() <= 1)
+            fileDownloadQueueSet
+                    .setCallbackProgressTimes(1)
+                    .start();
     }
 
     public void pauseDownloadList() {
         FileDownloader.getImpl().pauseAll();
-    }
-
-    public Integer startDownload() {
-        NotificationListener notificationListener = new NotificationListener();
-
-        return FileDownloader.getImpl().create(url)
-                .setPath(path, isDir)
-                .setListener(notificationListener)
-                .start();
     }
 
     public void setDownloadListener(DownloadListener downloadListener) {
@@ -117,21 +111,59 @@ public class DownloadManager {
             Log.e(TAG, "stop: not exist");
     }
 
-    private static class NotificationListener extends FileDownloadNotificationListener {
+    public int getDownloadId(String url, String path) {
+        return FileDownloadUtils.generateId(url, path);
+    }
 
-        public NotificationListener() {
+    private class NotificationListener extends FileDownloadNotificationListener {
+
+        NotificationListener() {
             super(notificationHelper);
         }
 
         @Override
         protected void completed(BaseDownloadTask task) {
+            downloadStackSize--;
+            Log.e(TAG, "completed: 1" + downloadStackSize + " downloadStackSize");
             super.completed(task);
             if (downloadListener != null)
-                downloadListener.completed(task.getSmallFileTotalBytes());
+                downloadListener.completed(new ProgressModel(
+                        task.getId(),
+                        task.getFilename(),
+                        COMPLETED,
+                        (int) task.getLargeFileSoFarBytes(),
+                        (int) task.getLargeFileTotalBytes(),
+                        task.getSpeed()));
+            FileDownloader.getImpl().stopForeground(true);
+            removeDownloadFromDownloadList(task.getUrl(), task.getPath());
+            startDownloadList();
+        }
+
+        private void removeDownloadFromDownloadList(String url, String path) {
+            for (BaseDownloadTask baseDownloadTask : taskList) {
+                if (baseDownloadTask.getUrl() == url &&
+                        baseDownloadTask.getPath() == path) {
+                    taskList.remove(baseDownloadTask);
+                }
+            }
+            Log.e(TAG, "removeDownloadFromDownloadList: " + taskList.size());
+        }
+
+        @Override
+        protected void error(BaseDownloadTask task, Throwable e) {
+            downloadStackSize--;
+            Log.e(TAG, "error: 1" + downloadStackSize + " downloadStackSize");
+            super.error(task, e);
+            if (downloadListener != null)
+                downloadListener.error(task.getId(), e.getMessage());
+            FileDownloader.getImpl().stopForeground(true);
+            removeDownloadFromDownloadList(task.getUrl(), task.getPath());
+            startDownloadList();
         }
 
         @Override
         protected BaseNotificationItem create(BaseDownloadTask task) {
+            Log.e(TAG, "create: 1");
             return new NotificationItem(task.getId(), task.getFilename(), task.getFilename());
 
         }
@@ -139,16 +171,19 @@ public class DownloadManager {
         @Override
         public void addNotificationItem(BaseDownloadTask task) {
             super.addNotificationItem(task);
+            Log.e(TAG, "addNotificationItem: 1");
         }
 
         @Override
         public void destroyNotification(BaseDownloadTask task) {
             super.destroyNotification(task);
+            Log.e(TAG, "destroyNotification: 1");
         }
 
         @Override
         protected boolean interceptCancel(BaseDownloadTask task,
                                           BaseNotificationItem n) {
+            Log.e(TAG, "interceptCancel: 1");
             // in this demo, I don't want to cancel the builder, just show for the test
             // so return true
             return true;
@@ -156,21 +191,36 @@ public class DownloadManager {
 
         @Override
         protected boolean disableNotification(BaseDownloadTask task) {
+            Log.e(TAG, "disableNotification: 1");
             return super.disableNotification(task);
         }
 
         @Override
         protected void pending(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+            Log.e(TAG, "pending: 1" + downloadStackSize + " downloadStackSize");
             super.pending(task, soFarBytes, totalBytes);
             if (downloadListener != null)
-                downloadListener.pending(soFarBytes, totalBytes);
+                downloadListener.pending(new ProgressModel(
+                        task.getId(),
+                        task.getFilename(),
+                        COMPLETED,
+                        soFarBytes,
+                        totalBytes,
+                        task.getSpeed()));
         }
 
         @Override
         protected void progress(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+            Log.e(TAG, "progress: 1" + downloadStackSize + " downloadStackSize");
             super.progress(task, soFarBytes, totalBytes);
             if (downloadListener != null)
-                downloadListener.progress(soFarBytes, totalBytes);
+                downloadListener.progress(new ProgressModel(
+                        task.getId(),
+                        task.getFilename(),
+                        COMPLETED,
+                        soFarBytes,
+                        totalBytes,
+                        task.getSpeed()));
         }
 
     }

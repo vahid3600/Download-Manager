@@ -17,9 +17,10 @@
     <string name="download_speed_bytes">%1$d B/s</string>
     <string name="download_speed_kb">%1$s KB/s</string>
     <string name="download_speed_mb">%1$s MB/s</string>
-    <string name="url1">https://www.sample-videos.com/download-sample-pdf.php</string>
-    <string name="url2">https://www.sample-videos.com/download-sample-text-file.php</string>
-    <string name="url3">www.pdf995.com/samples/pdf.pdf</string>
-    <string name="url4">www.africau.edu/images/default/sample.pdf</string>
-    <string name="url5">https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf</string>
+    <string name="url1">https://www.dl.farsroid.com/app/App-Ops-Permission-manager-2.5.5(Farsroid.com).apk</string>
+    <string name="url2">https://www.dl.farsroid.com/app/Apex-Launcher-Pro-4.0.1-Mod(FarsRoid.Com).apk</string>
+    <string name="url3">https://www.dl.farsroid.com/app/VideoShow-PRO-Video-Editor-8.1.3pro(www.FarsRoid.com).apk</string>
+    <string name="url4">https://www.dl.farsroid.com/app/MX-Player-1.10.12(FarsRoid.Com).apk</string>
+    <string name="url5">https://www.dl.farsroid.com/app/MX-Player-1.10.17-Color-Mod(FarsRoid.Com).apk</string>
+    <string name="permission_granted">Permission Granted</string>
 </resources>

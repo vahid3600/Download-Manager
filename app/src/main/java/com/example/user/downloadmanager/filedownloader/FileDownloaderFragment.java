@@ -1,20 +1,25 @@
 package com.example.user.downloadmanager.filedownloader;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
+import android.widget.Toast;
 
 import com.example.user.downloadmanager.R;
 import com.example.user.downloadmanager.downloadmanager.DownloadListener;
 import com.example.user.downloadmanager.downloadmanager.DownloadManager;
+import com.example.user.downloadmanager.downloadmanager.ProgressModel;
 import com.liulishuo.filedownloader.FileDownloadMonitor;
 
 import java.io.File;
@@ -24,30 +29,11 @@ import java.util.Objects;
 
 public class FileDownloaderFragment extends Fragment implements RecyclerViewAdapter.OnListItemClickListener {
 
-    private Button start, stop, pause;
     private static final String TAG = "FetchDownloadManagerFra";
-
-    //    private TextView progressTextView1;
-//    private TextView etaTextView1;
-//    private TextView downloadSpeedTextView1;
-//    private ProgressBar progressBar1;
-    private DownloadManager downloadManager1;
-    private RecyclerView recyclerView;
+    private static final int STORAGE_PERMISSION_CODE = 1;
+    private DownloadManager downloadManager;
     private RecyclerViewAdapter recyclerViewAdapter;
     private List<DownloadModel> downloadList;
-    private int downloadId;
-    //    public static int downloadSoFarBytes;
-//    public static int downloadTotalBytes;
-//    private static int downloadFileSize;
-    private String downloadStatus;
-
-    private DownloadModel downloadModel1;
-    private DownloadModel downloadModel2;
-    private DownloadModel downloadModel3;
-    private DownloadModel downloadModel4;
-    private DownloadModel downloadModel5;
-
-//    private ProgressListener progressListener;
 
     public FileDownloaderFragment() {
         // Required empty public constructor
@@ -65,67 +51,70 @@ public class FileDownloaderFragment extends Fragment implements RecyclerViewAdap
         super.onViewCreated(view, savedInstanceState);
         recyclerViewAdapter = new RecyclerViewAdapter();
         recyclerViewAdapter.setListener(this);
-//        progressListener = ;
-        recyclerView = view.findViewById(R.id.recyclerview);
+        RecyclerView recyclerView = view.findViewById(R.id.recyclerview);
         recyclerView.setAdapter(recyclerViewAdapter);
         recyclerViewAdapter.addData(getDownloadList());
-
-
-//        progressTextView1 = view.findViewById(R.id.progressTextView1);
-//        etaTextView1 = view.findViewById(R.id.etaTextView1);
-//        downloadSpeedTextView1 = view.findViewById(R.id.downloadSpeedTextView1);
-//        progressBar1 = view.findViewById(R.id.progressBar1);
-
-//        start.setOnClickListener(v ->
-//                downloadId1 = downloadManager1.startDownload());
-//
-//        stop.setOnClickListener(v -> {
-//            downloadManager1.stop();
-//            downloadId1 = 0;
-//        });
-//
-//        pause.setOnClickListener(v -> downloadManager1.pause(downloadId1));
     }
 
     @NonNull
     public static String getSaveDir() {
-        return Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString() + "/file_downloader";
+        return Environment
+                .getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+                .toString() + "/file_downloader";
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        String url1 = "http://www.pdf995.com/samples/pdf.pdf";
-        String file1 = getSaveDir() + "/downloads/" + Uri.parse(url1).getLastPathSegment();
 
-        downloadManager1 = DownloadManager.getDownloadManager();
-        downloadManager1.firstInit(Objects.requireNonNull(getActivity()).getApplication());
-//        downloadManager1.downloadInit(getContext(), url1, file1, true);
-        downloadManager1.setDownloadListener(new DownloadListener() {
+        downloadManager = DownloadManager.getDownloadManager();
+        downloadManager.firstInit(Objects.requireNonNull(getActivity()).getApplication());
+        downloadManager.setDownloadListener(new DownloadListener() {
             @Override
-            public void pending(int soFarBytes, int totalBytes) {
-//                progressBar1.setIndeterminate(true);
-                downloadStatus = "pending";
+            public void error(int id, String message) {
+                showToastMessage(message);
+            }
+
+            @Override
+            public void pending(ProgressModel progressModel) {
+                updateProgressBar(
+                        progressModel.getId(),
+                        progressModel.getSoFarBytes(),
+                        progressModel.getTotalBytes(),
+                        progressModel.getStatus());
                 Log.e(TAG, "pending: 1");
             }
 
             @Override
-            public void progress(int soFarBytes, int totalBytes) {
-                downloadList.get(0).setProgressbarModle(new ProgressbarModle(soFarBytes, totalBytes, totalBytes, "progress"));
-                recyclerViewAdapter.addData(downloadList);
-                Log.e(TAG, "progress: 1" + soFarBytes + " " + totalBytes);
+            public void progress(ProgressModel progressModel) {
+                updateProgressBar(
+                        progressModel.getId(),
+                        progressModel.getSoFarBytes(),
+                        progressModel.getTotalBytes(),
+                        progressModel.getStatus());
+                Log.e(TAG, "progress: 1" );
             }
 
             @Override
-            public void completed(int fileSize) {
-                downloadStatus = "completed";
-//                downloadList.get(0).setProgressbarModle(new ProgressbarModle(soFarBytes, totalBytes, totalBytes, "progress"));
-//                downloadFileSize = fileSize;
-//                progressBar1.setIndeterminate(false);
-//                progressBar1.setProgress(fileSize);
-                Log.e(TAG, "completed: 1");
+            public void completed(ProgressModel progressModel) {
+                updateProgressBar(
+                        progressModel.getId(),
+                        progressModel.getSoFarBytes(),
+                        progressModel.getTotalBytes(),
+                        progressModel.getStatus());
+                Log.e(TAG, "completed: 1" );
             }
         });
+    }
+
+    private void updateProgressBar(int id, int soFarBytes, int totalBytes, String status) {
+        for (DownloadModel downloadModel : downloadList)
+            if (downloadModel.getId() == id) {
+                downloadModel.setProgressbarModle(
+                        new ProgressbarModel(soFarBytes, totalBytes, totalBytes, status)
+                );
+            }
+        recyclerViewAdapter.addData(downloadList);
     }
 
     @Override
@@ -143,71 +132,115 @@ public class FileDownloaderFragment extends Fragment implements RecyclerViewAdap
     }
 
     public List<DownloadModel> getDownloadList() {
+        String url;
+        String path;
         if (downloadList == null) {
             downloadList = new ArrayList<>();
-            downloadList.add(downloadModel1 = new DownloadModel(
-                    getString(R.string.url1),
-                    getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url1)).getLastPathSegment(),
+            downloadList.add(new DownloadModel(
+                    url = getString(R.string.url1),
+                    path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url1)).getLastPathSegment(),
                     "https://www.w3schools.com/w3images/avatar6.png",
-                    new ProgressbarModle(
+                    downloadManager.getDownloadId(url, path),
+                    new ProgressbarModel(
                             0,
                             0,
                             0,
-                            downloadStatus)
+                            "")
             ));
-            downloadList.add(downloadModel2 = new DownloadModel(
-                    getString(R.string.url2),
-                    getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url2)).getLastPathSegment(),
+            downloadList.add(new DownloadModel(
+                    url = getString(R.string.url2),
+                    path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url2)).getLastPathSegment(),
                     "https://www.w3schools.com/w3images/avatar2.png",
-                    new ProgressbarModle(
+                    downloadManager.getDownloadId(url, path),
+                    new ProgressbarModel(
                             0,
                             0,
                             0,
-                            downloadStatus)
+                            "")
             ));
-            downloadList.add(downloadModel3 = new DownloadModel(
-                    getString(R.string.url3),
-                    getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url3)).getLastPathSegment(),
+            downloadList.add(new DownloadModel(
+                    url = getString(R.string.url3),
+                    path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url3)).getLastPathSegment(),
                     "https://www.w3schools.com/howto/img_avatar2.png",
-                    new ProgressbarModle(
+                    downloadManager.getDownloadId(url, path),
+                    new ProgressbarModel(
                             0,
                             0,
                             0,
-                            downloadStatus)
+                            "")
             ));
-            downloadList.add(downloadModel4 = new DownloadModel(
-                    getString(R.string.url4),
-                    getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url4)).getLastPathSegment(),
+            downloadManager.getDownloadId(url, path);
+            downloadList.add(new DownloadModel(
+                    url = getString(R.string.url4),
+                    path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url4)).getLastPathSegment(),
                     "https://www.w3schools.com/howto/img_avatar.png",
-                    new ProgressbarModle(
+                    downloadManager.getDownloadId(url, path),
+                    new ProgressbarModel(
                             0,
                             0,
                             0,
-                            downloadStatus)
+                            "")
             ));
-            downloadList.add(downloadModel5 = new DownloadModel(
-                    getString(R.string.url5),
-                    getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url5)).getLastPathSegment(),
+            downloadManager.getDownloadId(url, path);
+            downloadList.add(new DownloadModel(
+                    url = getString(R.string.url5),
+                    path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url5)).getLastPathSegment(),
                     "https://www.w3schools.com/w3images/avatar5.png",
-                    new ProgressbarModle(
+                    downloadManager.getDownloadId(url, path),
+                    new ProgressbarModel(
                             0,
                             0,
                             0,
-                            downloadStatus)
+                            "")
             ));
+            downloadManager.getDownloadId(url, path);
         }
         return downloadList;
     }
 
+    private void askExternalStoragePermission() {
+        if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
+                Manifest.permission.READ_EXTERNAL_STORAGE)) {
+        }
+        this.requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE
+                , Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        switch (requestCode){
+            case STORAGE_PERMISSION_CODE:
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    showToastMessage(getString(R.string.permission_granted));
+                }
+        }
+    }
+
+    private void showToastMessage(String message) {
+        Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+    }
+
+    private boolean readExternalStorage() {
+        return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.READ_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
     @Override
     public void onStartButtonClick(String url, String path) {
-        downloadManager1.addTaskDownload(url, path);
-        downloadManager1.startDownloadList();
+        Log.e(TAG, "onStartButtonClick: "+readExternalStorage() );
+        if (readExternalStorage()){
+            downloadManager.addTaskDownload(url, path);
+            downloadManager.startDownloadList();}
+        else
+            askExternalStoragePermission();
     }
 
     @Override
     public void onPauseButtonClick() {
-        downloadManager1.pauseDownloadList();
+        downloadManager.pauseDownloadList();
     }
 
     @Override

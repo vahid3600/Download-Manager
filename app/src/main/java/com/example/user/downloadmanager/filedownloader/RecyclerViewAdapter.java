@@ -5,7 +5,6 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
@@ -13,6 +12,7 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.example.user.downloadmanager.R;
+import com.example.user.downloadmanager.downloadmanager.DownloadManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +32,8 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder viewHolder, int i) {
-        viewHolder.onBind(downloadList.get(i));
+        DownloadModel downloadModel = downloadList.get(i);
+        viewHolder.onBind(downloadModel);
     }
 
     @Override
@@ -73,8 +74,30 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
         public void onBind(DownloadModel downloadModel) {
             Glide.with(itemView.getContext()).load(downloadModel.getAvatar()).into(avatar);
-            progressBar.setProgress(downloadModel.getProgressbarModle().getSoFarBytes());
-            progressBar.setMax(downloadModel.getProgressbarModle().getTotalBytes());
+            if (downloadModel.getProgressbarModle().getStatus() != null)
+                switch (downloadModel.getProgressbarModle().getStatus()) {
+                    case DownloadManager.PENDING:
+                        progressBar.setIndeterminate(true);
+                        break;
+                    case DownloadManager.COMPLETED:
+                        progressBar.setIndeterminate(false);
+                        progressBar.setProgress(1);
+                        progressBar.setMax(1);
+                        break;
+                    case DownloadManager.PROGRESS:
+                        progressBar.setIndeterminate(false);
+                        progressBar.setMax(downloadModel.getProgressbarModle().getSoFarBytes());
+                        progressBar.setProgress(downloadModel.getProgressbarModle().getTotalBytes());
+                        break;
+                    default:
+                        return;
+                }
+//            if (downloadModel.getProgressbarModle().getStatus() == DownloadManager.PENDING)
+//                progressBar.setIndeterminate(true);
+//            else if ()
+//                progressBar.setIndeterminate(false);
+//            progressBar.setProgress(downloadModel.getProgressbarModle().getSoFarBytes());
+//            progressBar.setMax(downloadModel.getProgressbarModle().getTotalBytes());
 //            if (downloadModel.getProgressbarModle().getStatus().equals("progress") ||
 //                    downloadModel.getProgressbarModle().getStatus().equals("completed"))
 //                progressBar.setIndeterminate(false);

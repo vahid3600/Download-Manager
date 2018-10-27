@@ -1,13 +1,13 @@
 package com.example.user.downloadmanager.filedownloader;
 
-public class ProgressbarModle {
+public class ProgressbarModel {
 
     private int soFarBytes;
     private int totalBytes;
     private int fileSize;
     private String status;
 
-    public ProgressbarModle(int soFarBytes, int totalBytes, int fileSize, String status) {
+    public ProgressbarModel(int soFarBytes, int totalBytes, int fileSize, String status) {
         this.soFarBytes = soFarBytes;
         this.totalBytes = totalBytes;
         this.fileSize = fileSize;
