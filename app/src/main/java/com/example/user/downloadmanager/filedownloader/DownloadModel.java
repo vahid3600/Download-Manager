@@ -1,8 +1,8 @@
 package com.example.user.downloadmanager.filedownloader;
 
-public class DownloadModel {
+import com.example.user.downloadmanager.downloadmanager.ProgressModel;
 
-    private int id;
+public class DownloadModel {
 
     private String url;
 
@@ -10,22 +10,13 @@ public class DownloadModel {
 
     private String avatar;
 
-    private ProgressbarModel progressbarModle;
+    private ProgressModel progressModel;
 
-    public DownloadModel(String url, String path, String avatar, int id, ProgressbarModel progressbarModle) {
+    public DownloadModel(String url, String path, String avatar, ProgressModel progressModel) {
         this.url = url;
         this.path = path;
         this.avatar = avatar;
-        this.id = id;
-        this.progressbarModle = progressbarModle;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
+        this.progressModel = progressModel;
     }
 
     public void setUrl(String url) {
@@ -40,8 +31,8 @@ public class DownloadModel {
         this.avatar = avatar;
     }
 
-    public void setProgressbarModle(ProgressbarModel progressbarModle) {
-        this.progressbarModle = progressbarModle;
+    public void setProgressModel(ProgressModel progressModel) {
+        this.progressModel = progressModel;
     }
 
     public String getUrl() {
@@ -56,7 +47,7 @@ public class DownloadModel {
         return avatar;
     }
 
-    public ProgressbarModel getProgressbarModle() {
-        return progressbarModle;
+    public ProgressModel getProgressModel() {
+        return progressModel;
     }
 }

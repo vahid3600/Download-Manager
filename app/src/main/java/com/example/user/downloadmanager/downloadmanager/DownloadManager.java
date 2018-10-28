@@ -33,7 +33,6 @@ public class DownloadManager {
     public static final String COMPLETED = "completed";
     public static final String PENDING = "pending";
     private static final String TAG = "DownloadManager";
-    private static int downloadStackSize = 0;
     private static DownloadListener downloadListener;
     private static final FileDownloadNotificationHelper<NotificationItem> notificationHelper =
             new FileDownloadNotificationHelper<>();
@@ -71,21 +70,22 @@ public class DownloadManager {
         fileDownloadQueueSet = new FileDownloadQueueSet(notificationListener);
     }
 
-    public void addTaskDownload(String url, String path) {
-        downloadStackSize++;
+    public void addDownloadTask(String url, String path) {
         taskList.add(FileDownloader
                 .getImpl()
                 .create(url)
                 .setPath(path));
-        fileDownloadQueueSet.downloadSequentially(taskList);
-        Log.e(TAG, "addTaskDownload: "+taskList.size() );
+        Log.e(TAG, "addDownloadTask: " + taskList.size());
     }
 
     public void startDownloadList() {
-        if (taskList.size() <= 1)
+//        if (taskList.size() <= 1)
+        Log.e(TAG, "startDownloadList: "+taskList.size() );
             fileDownloadQueueSet
+                    .downloadSequentially(taskList)
                     .setCallbackProgressTimes(1)
                     .start();
+
     }
 
     public void pauseDownloadList() {
@@ -102,14 +102,14 @@ public class DownloadManager {
         }
     }
 
-    public void stop() {
-        final File file = new File(path);
-        Log.e(TAG, "stop: " + file.getName());
-        if (file.exists()) {
-            Log.e(TAG, "stop: delete" + file.delete());
-        } else
-            Log.e(TAG, "stop: not exist");
-    }
+//    public void stop() {
+//        final File file = new File(path);
+//        Log.e(TAG, "stop: " + file.getName());
+//        if (file.exists()) {
+//            Log.e(TAG, "stop: delete" + file.delete());
+//        } else
+//            Log.e(TAG, "stop: not exist");
+//    }
 
     public int getDownloadId(String url, String path) {
         return FileDownloadUtils.generateId(url, path);
@@ -123,36 +123,38 @@ public class DownloadManager {
 
         @Override
         protected void completed(BaseDownloadTask task) {
-            downloadStackSize--;
-            Log.e(TAG, "completed: 1" + downloadStackSize + " downloadStackSize");
+            Log.e(TAG, "completed: 1" );
             super.completed(task);
             if (downloadListener != null)
-                downloadListener.completed(new ProgressModel(
+                downloadListener.completed(
                         task.getId(),
-                        task.getFilename(),
-                        COMPLETED,
-                        (int) task.getLargeFileSoFarBytes(),
-                        (int) task.getLargeFileTotalBytes(),
-                        task.getSpeed()));
+                        new ProgressModel(
+                                task.getId(),
+                                task.getFilename(),
+                                COMPLETED,
+                                (int) task.getLargeFileSoFarBytes(),
+                                (int) task.getLargeFileTotalBytes(),
+                                task.getSpeed()));
             FileDownloader.getImpl().stopForeground(true);
             removeDownloadFromDownloadList(task.getUrl(), task.getPath());
             startDownloadList();
         }
 
         private void removeDownloadFromDownloadList(String url, String path) {
-            for (BaseDownloadTask baseDownloadTask : taskList) {
-                if (baseDownloadTask.getUrl() == url &&
-                        baseDownloadTask.getPath() == path) {
-                    taskList.remove(baseDownloadTask);
+            Log.d(TAG, "removeDownloadFromDownloadList: " + taskList.size());
+            if (taskList.size() != 0)
+                for (BaseDownloadTask baseDownloadTask : taskList) {
+                    if (baseDownloadTask.getUrl() == url &&
+                            baseDownloadTask.getPath() == path) {
+                        taskList.remove(baseDownloadTask);
+                    }
                 }
-            }
             Log.e(TAG, "removeDownloadFromDownloadList: " + taskList.size());
         }
 
         @Override
         protected void error(BaseDownloadTask task, Throwable e) {
-            downloadStackSize--;
-            Log.e(TAG, "error: 1" + downloadStackSize + " downloadStackSize");
+            Log.e(TAG, "error: 1" );
             super.error(task, e);
             if (downloadListener != null)
                 downloadListener.error(task.getId(), e.getMessage());
@@ -197,30 +199,33 @@ public class DownloadManager {
 
         @Override
         protected void pending(BaseDownloadTask task, int soFarBytes, int totalBytes) {
-            Log.e(TAG, "pending: 1" + downloadStackSize + " downloadStackSize");
+            Log.e(TAG, "pending: 1" );
             super.pending(task, soFarBytes, totalBytes);
             if (downloadListener != null)
-                downloadListener.pending(new ProgressModel(
-                        task.getId(),
-                        task.getFilename(),
-                        COMPLETED,
-                        soFarBytes,
-                        totalBytes,
-                        task.getSpeed()));
+                downloadListener.pending(task.getId(),
+                        new ProgressModel(
+                                task.getId(),
+                                task.getFilename(),
+                                PENDING,
+                                soFarBytes,
+                                totalBytes,
+                                task.getSpeed()));
         }
 
         @Override
         protected void progress(BaseDownloadTask task, int soFarBytes, int totalBytes) {
-            Log.e(TAG, "progress: 1" + downloadStackSize + " downloadStackSize");
+            Log.e(TAG, "progress: 1");
             super.progress(task, soFarBytes, totalBytes);
             if (downloadListener != null)
-                downloadListener.progress(new ProgressModel(
+                downloadListener.progress(
                         task.getId(),
-                        task.getFilename(),
-                        COMPLETED,
-                        soFarBytes,
-                        totalBytes,
-                        task.getSpeed()));
+                        new ProgressModel(
+                                task.getId(),
+                                task.getFilename(),
+                                PROGRESS,
+                                soFarBytes,
+                                totalBytes,
+                                task.getSpeed()));
         }
 
     }
@@ -267,7 +272,7 @@ public class DownloadManager {
                     Builder(FileDownloadHelper.getAppContext(), "");
 
             builder.setDefaults(Notification.DEFAULT_LIGHTS)
-                    .setOngoing(true)
+                    .setOngoing(false)
                     .setPriority(NotificationCompat.PRIORITY_MIN)
                     .setContentTitle(getTitle())
                     .setContentText(desc)
@@ -276,7 +281,7 @@ public class DownloadManager {
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setCategory(NotificationCompat.CATEGORY_MESSAGE)
                     .setSmallIcon(R.drawable.ic_download)
-                    .addAction(0, "Stop", stopAction)
+//                    .addAction(0, "Stop", stopAction)
                     .addAction(0, "Pause", pauseAction)
                     .addAction(0, "Start", playAction);
         }
@@ -284,7 +289,7 @@ public class DownloadManager {
         @Override
         public void show(boolean statusChanged, int status, boolean isShowProgress) {
 
-            String desc = getDesc();
+            String desc = "";
             switch (status) {
                 case FileDownloadStatus.pending:
                     desc += " pending";

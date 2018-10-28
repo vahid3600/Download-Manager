@@ -76,44 +76,31 @@ public class FileDownloaderFragment extends Fragment implements RecyclerViewAdap
             }
 
             @Override
-            public void pending(ProgressModel progressModel) {
-                updateProgressBar(
-                        progressModel.getId(),
-                        progressModel.getSoFarBytes(),
-                        progressModel.getTotalBytes(),
-                        progressModel.getStatus());
-                Log.e(TAG, "pending: 1");
+            public void pending(int id, ProgressModel progressModel) {
+                updateProgressBar(id, progressModel);
+                Log.e(TAG, "pending: ");
             }
 
             @Override
-            public void progress(ProgressModel progressModel) {
-                updateProgressBar(
-                        progressModel.getId(),
-                        progressModel.getSoFarBytes(),
-                        progressModel.getTotalBytes(),
-                        progressModel.getStatus());
-                Log.e(TAG, "progress: 1" );
+            public void progress(int id, ProgressModel progressModel) {
+                updateProgressBar(id, progressModel);
+                Log.e(TAG, "progress: ");
             }
 
             @Override
-            public void completed(ProgressModel progressModel) {
-                updateProgressBar(
-                        progressModel.getId(),
-                        progressModel.getSoFarBytes(),
-                        progressModel.getTotalBytes(),
-                        progressModel.getStatus());
-                Log.e(TAG, "completed: 1" );
+            public void completed(int id, ProgressModel progressModel) {
+                updateProgressBar(id, progressModel);
+                Log.e(TAG, "completed: ");
             }
         });
     }
 
-    private void updateProgressBar(int id, int soFarBytes, int totalBytes, String status) {
-        for (DownloadModel downloadModel : downloadList)
-            if (downloadModel.getId() == id) {
-                downloadModel.setProgressbarModle(
-                        new ProgressbarModel(soFarBytes, totalBytes, totalBytes, status)
-                );
+    private void updateProgressBar(int id, ProgressModel progressModel) {
+        for (DownloadModel downloadModel : downloadList) {
+            if (downloadModel.getProgressModel().getId() == id) {
+                downloadModel.setProgressModel(progressModel);
             }
+        }
         recyclerViewAdapter.addData(downloadList);
     }
 
@@ -140,59 +127,29 @@ public class FileDownloaderFragment extends Fragment implements RecyclerViewAdap
                     url = getString(R.string.url1),
                     path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url1)).getLastPathSegment(),
                     "https://www.w3schools.com/w3images/avatar6.png",
-                    downloadManager.getDownloadId(url, path),
-                    new ProgressbarModel(
-                            0,
-                            0,
-                            0,
-                            "")
-            ));
+                    new ProgressModel(downloadManager.getDownloadId(url, path), "", "", 0, 0, 0)));
             downloadList.add(new DownloadModel(
                     url = getString(R.string.url2),
                     path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url2)).getLastPathSegment(),
                     "https://www.w3schools.com/w3images/avatar2.png",
-                    downloadManager.getDownloadId(url, path),
-                    new ProgressbarModel(
-                            0,
-                            0,
-                            0,
-                            "")
-            ));
+                    new ProgressModel(downloadManager.getDownloadId(url, path), "", "", 0, 0, 0)));
             downloadList.add(new DownloadModel(
                     url = getString(R.string.url3),
                     path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url3)).getLastPathSegment(),
                     "https://www.w3schools.com/howto/img_avatar2.png",
-                    downloadManager.getDownloadId(url, path),
-                    new ProgressbarModel(
-                            0,
-                            0,
-                            0,
-                            "")
-            ));
+                    new ProgressModel(downloadManager.getDownloadId(url, path), "", "", 0, 0, 0)));
             downloadManager.getDownloadId(url, path);
             downloadList.add(new DownloadModel(
                     url = getString(R.string.url4),
                     path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url4)).getLastPathSegment(),
                     "https://www.w3schools.com/howto/img_avatar.png",
-                    downloadManager.getDownloadId(url, path),
-                    new ProgressbarModel(
-                            0,
-                            0,
-                            0,
-                            "")
-            ));
+                    new ProgressModel(downloadManager.getDownloadId(url, path), "", "", 0, 0, 0)));
             downloadManager.getDownloadId(url, path);
             downloadList.add(new DownloadModel(
                     url = getString(R.string.url5),
                     path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url5)).getLastPathSegment(),
                     "https://www.w3schools.com/w3images/avatar5.png",
-                    downloadManager.getDownloadId(url, path),
-                    new ProgressbarModel(
-                            0,
-                            0,
-                            0,
-                            "")
-            ));
+                    new ProgressModel(downloadManager.getDownloadId(url, path), "", "", 0, 0, 0)));
             downloadManager.getDownloadId(url, path);
         }
         return downloadList;
@@ -210,7 +167,7 @@ public class FileDownloaderFragment extends Fragment implements RecyclerViewAdap
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
-        switch (requestCode){
+        switch (requestCode) {
             case STORAGE_PERMISSION_CODE:
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -230,11 +187,10 @@ public class FileDownloaderFragment extends Fragment implements RecyclerViewAdap
 
     @Override
     public void onStartButtonClick(String url, String path) {
-        Log.e(TAG, "onStartButtonClick: "+readExternalStorage() );
-        if (readExternalStorage()){
-            downloadManager.addTaskDownload(url, path);
-            downloadManager.startDownloadList();}
-        else
+        if (readExternalStorage()) {
+            downloadManager.addDownloadTask(url, path);
+            downloadManager.startDownloadList();
+        } else
             askExternalStoragePermission();
     }
 

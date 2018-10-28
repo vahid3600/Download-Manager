@@ -8,7 +8,7 @@ import android.widget.Toast;
 public class NotificationReceiverStopButton extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        DownloadManager.getDownloadManager().stop();
+//        DownloadManager.getDownloadManager().stop();
         Toast.makeText(context, "stop", Toast.LENGTH_SHORT).show();
     }
 }
