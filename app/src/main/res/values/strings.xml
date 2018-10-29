@@ -22,5 +22,11 @@
     <string name="url3">https://www.dl.farsroid.com/app/VideoShow-PRO-Video-Editor-8.1.3pro(www.FarsRoid.com).apk</string>
     <string name="url4">https://www.dl.farsroid.com/app/MX-Player-1.10.12(FarsRoid.Com).apk</string>
     <string name="url5">https://www.dl.farsroid.com/app/MX-Player-1.10.17-Color-Mod(FarsRoid.Com).apk</string>
+    <string name="url6">https://www.dl.farsroid.com/app/Super-Shortcut-5.000.000.126_PRO(www.Farsroid.com).apk</string>
+    <string name="url7">https://www.dl.farsroid.com/app/A-Gallery-Photos-Videos-Premium-2.2.21.2(www.Farsroid.com).apk</string>
+    <string name="url8">https://www.dl.farsroid.com/app/Do-It-Later-Premium-2.4.5(www.Farsroid.com).apk</string>
+    <string name="url9">https://www.dl.farsroid.com/app/Weather-App-Pro-1.3(www.farsroid.com).apk</string>
+    <string name="url10">https://www.dl.farsroid.com/app/Sub4Sub-Pro-No-Ads-4.7(www.farsroid.com).apk</string>
     <string name="permission_granted">Permission Granted</string>
+    <string name="my_channel_id">my_channel_id</string>
 </resources>

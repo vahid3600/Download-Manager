@@ -14,9 +14,16 @@ import android.widget.TextView;
 import com.bumptech.glide.Glide;
 import com.example.user.downloadmanager.R;
 import com.example.user.downloadmanager.downloadmanager.DownloadManager;
+import com.liulishuo.filedownloader.util.FileDownloadUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.example.user.downloadmanager.downloadmanager.DownloadManager.COMPLETED;
+import static com.example.user.downloadmanager.downloadmanager.DownloadManager.ERROR;
+import static com.example.user.downloadmanager.downloadmanager.DownloadManager.PAUSE;
+import static com.example.user.downloadmanager.downloadmanager.DownloadManager.PENDING;
+import static com.example.user.downloadmanager.downloadmanager.DownloadManager.PROGRESS;
 
 public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder> {
 
@@ -71,12 +78,11 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
             start.setOnClickListener(this);
             pause.setOnClickListener(this);
             stop.setOnClickListener(this);
-
         }
 
         public void onBind(DownloadModel downloadModel) {
             Glide.with(itemView.getContext()).load(downloadModel.getAvatar()).into(avatar);
-            Log.e(TAG, "onBind: " +
+            Log.e(TAG, "onBind: "+ getAdapterPosition() + " " +
                     downloadModel.getProgressModel().getId() + " " +
                     downloadModel.getProgressModel().getName() + " " +
                     downloadModel.getProgressModel().getDownloadSpeed() + " " +
@@ -84,29 +90,53 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                     downloadModel.getProgressModel().getTotalBytes() + " " +
                     downloadModel.getProgressModel().getStatus() + " ");
             switch (downloadModel.getProgressModel().getStatus()) {
-                case DownloadManager.PENDING:
+                case PENDING:
                     progressBar.setIndeterminate(true);
+                    text1.setText(downloadModel.getProgressModel().getName());
+                    text2.setText("" + downloadModel.getProgressModel().getDownloadSpeed());
+                    text3.setText(downloadModel.getProgressModel().getStatus());
                     break;
-                case DownloadManager.COMPLETED:
+                case PAUSE:
+                    progressBar.setIndeterminate(true);
+                    text1.setText(downloadModel.getProgressModel().getName());
+                    text2.setText("" + downloadModel.getProgressModel().getDownloadSpeed());
+                    text3.setText(downloadModel.getProgressModel().getStatus());
+                    break;
+                case ERROR:
+                    progressBar.setIndeterminate(true);
+                case COMPLETED:
                     progressBar.setIndeterminate(false);
-                    progressBar.setProgress(1);
                     progressBar.setMax(1);
+                    progressBar.setProgress(1);
+                    text1.setText(downloadModel.getProgressModel().getName());
+                    text2.setText("" + downloadModel.getProgressModel().getDownloadSpeed());
+                    text3.setText(downloadModel.getProgressModel().getStatus());
                     break;
-                case DownloadManager.PROGRESS:
+                case PROGRESS:
                     progressBar.setIndeterminate(false);
                     progressBar.setMax(downloadModel.getProgressModel().getTotalBytes());
                     progressBar.setProgress(downloadModel.getProgressModel().getSoFarBytes());
+                    text1.setText(downloadModel.getProgressModel().getName());
+                    text2.setText("" + downloadModel.getProgressModel().getDownloadSpeed());
+                    text3.setText(downloadModel.getProgressModel().getStatus());
                     break;
-                default:
-                    return;
+                case "":
+                    progressBar.setIndeterminate(false);
+                    progressBar.setMax(0);
+                    progressBar.setProgress(0);
+                    text1.setText("");
+                    text2.setText("");
+                    text3.setText("");
+                    break;
             }
-            text1.setText(downloadModel.getProgressModel().getName());
-            text2.setText("" + downloadModel.getProgressModel().getDownloadSpeed());
-            text3.setText(downloadModel.getProgressModel().getStatus());
+//            text1.setText(downloadModel.getProgressModel().getName());
+//            text2.setText("" + downloadModel.getProgressModel().getDownloadSpeed());
+//            text3.setText(downloadModel.getProgressModel().getStatus());
         }
 
         @Override
         public void onClick(View v) {
+            Log.e(TAG, "getDownloadId: "+FileDownloadUtils.getStack()+" " );
             switch (v.getId()) {
                 case (R.id.start):
                     onListItemClickListener.onStartButtonClick(
@@ -115,7 +145,10 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
                     );
                     break;
                 case R.id.pause:
-                    onListItemClickListener.onPauseButtonClick();
+                    onListItemClickListener.onPauseButtonClick(
+                            downloadList.get(getAdapterPosition()).getUrl(),
+                            downloadList.get(getAdapterPosition()).getPath()
+                    );
                     break;
                 case R.id.stop:
                     onListItemClickListener.onStopButtonClick(
@@ -133,7 +166,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     interface OnListItemClickListener {
         void onStartButtonClick(String url, String path);
 
-        void onPauseButtonClick();
+        void onPauseButtonClick(String url, String path);
 
         void onStopButtonClick(String path);
     }

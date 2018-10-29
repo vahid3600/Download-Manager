@@ -9,7 +9,9 @@ import android.widget.Toast;
 public class NotificationReceiverStartButton extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        DownloadManager.getDownloadManager().startDownloadList();
+        DownloadManager.getDownloadManager().addDownloadTask(
+                intent.getStringExtra("URL")
+                , intent.getStringExtra("PATH"));
         Toast.makeText(context, "start", Toast.LENGTH_SHORT).show();
     }
 }

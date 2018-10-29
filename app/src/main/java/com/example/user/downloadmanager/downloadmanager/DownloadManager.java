@@ -2,16 +2,20 @@ package com.example.user.downloadmanager.downloadmanager;
 
 import android.app.Application;
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
+import android.graphics.Color;
+import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
 import com.example.user.downloadmanager.MainActivity;
 import com.example.user.downloadmanager.R;
-import com.example.user.downloadmanager.filedownloader.DownloadModel;
 import com.liulishuo.filedownloader.BaseDownloadTask;
 import com.liulishuo.filedownloader.FileDownloadQueueSet;
 import com.liulishuo.filedownloader.FileDownloader;
@@ -20,10 +24,10 @@ import com.liulishuo.filedownloader.model.FileDownloadStatus;
 import com.liulishuo.filedownloader.notification.BaseNotificationItem;
 import com.liulishuo.filedownloader.notification.FileDownloadNotificationHelper;
 import com.liulishuo.filedownloader.notification.FileDownloadNotificationListener;
+import com.liulishuo.filedownloader.services.FileDownloadService;
 import com.liulishuo.filedownloader.util.FileDownloadHelper;
 import com.liulishuo.filedownloader.util.FileDownloadUtils;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,17 +36,17 @@ public class DownloadManager {
     public static final String PROGRESS = "progress";
     public static final String COMPLETED = "completed";
     public static final String PENDING = "pending";
+    public static final String ERROR = "error";
+    public static final String PAUSE = "pause";
+    private static final String NOT_CHECKED = "not checked yet";
     private static final String TAG = "DownloadManager";
     private static DownloadListener downloadListener;
     private static final FileDownloadNotificationHelper<NotificationItem> notificationHelper =
             new FileDownloadNotificationHelper<>();
-    static final List<BaseDownloadTask> taskList = new ArrayList<>();
     FileDownloadQueueSet fileDownloadQueueSet;
+    private List<BaseDownloadTask> downloadTasks = new ArrayList<>();
     private static DownloadManager downloadManager;
     private static Context context;
-    private String path;
-    private String url;
-    private Boolean isDir;
 
     public DownloadManager() {
     }
@@ -56,50 +60,64 @@ public class DownloadManager {
     public void firstInit(Application application) {
 
         context = application.getApplicationContext();
-        NotificationListener notificationListener = new NotificationListener();
-
-        FileDownloader.setupOnApplicationOnCreate(application)
+        FileDownloader
+                .setupOnApplicationOnCreate(application)
                 .connectionCreator(new FileDownloadUrlConnection
                         .Creator(new FileDownloadUrlConnection.Configuration()
                         .connectTimeout(15_000) // set connection timeout.
                         .readTimeout(15_000) // set read timeout.
                 ))
                 .commit();
-
-
-        fileDownloadQueueSet = new FileDownloadQueueSet(notificationListener);
     }
 
     public void addDownloadTask(String url, String path) {
-        taskList.add(FileDownloader
-                .getImpl()
-                .create(url)
-                .setPath(path));
-        Log.e(TAG, "addDownloadTask: " + taskList.size());
-    }
 
-    public void startDownloadList() {
-//        if (taskList.size() <= 1)
-        Log.e(TAG, "startDownloadList: "+taskList.size() );
-            fileDownloadQueueSet
-                    .downloadSequentially(taskList)
-                    .setCallbackProgressTimes(1)
-                    .start();
+        fileDownloadQueueSet = new FileDownloadQueueSet(new NotificationListener());
+        fileDownloadQueueSet.downloadSequentially(
+                        FileDownloader
+                                .getImpl()
+                                .create(url)
+                                .setPath(path))
+                .start();
+
+//        FileDownloader.getImpl().start(new NotificationListener(), true);
+        FileDownloader.getImpl().create(url).setPath(path).asInQueueTask().enqueue();
 
     }
 
-    public void pauseDownloadList() {
-        FileDownloader.getImpl().pauseAll();
-    }
-
+    /**
+     * set a listener to get your download's status in time.
+     */
     public void setDownloadListener(DownloadListener downloadListener) {
         this.downloadListener = downloadListener;
     }
 
+    /**
+     * Pause your download with ID.
+     */
     public void pause(int downloadID) {
         if (downloadID != 0) {
             FileDownloader.getImpl().pause(downloadID);
         }
+        Log.e(TAG, "pause: " + downloadTasks.size());
+    }
+
+    /**
+     * Pause all download.
+     */
+    public void pauseAllDownloads() {
+        FileDownloader.getImpl().pauseAll();
+    }
+
+    public void startForegroundService() {
+        stopNotification();
+        FileDownloader.getImpl().startForeground(10001, NotificationItem.getNotificationInstance());
+    }
+
+    private static void stopNotification() {
+        FileDownloader.getImpl().stopForeground(true);
+        ((NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE)).
+                cancelAll();
     }
 
 //    public void stop() {
@@ -111,11 +129,17 @@ public class DownloadManager {
 //            Log.e(TAG, "stop: not exist");
 //    }
 
+    /**
+     * Get your download specific ID and use it for pause or detect your download file's status.
+     */
     public int getDownloadId(String url, String path) {
+                Log.e(TAG, "getDownloadId: ");
         return FileDownloadUtils.generateId(url, path);
     }
 
-    private class NotificationListener extends FileDownloadNotificationListener {
+
+    // Notification Listener for getting download file status
+    public static class NotificationListener extends FileDownloadNotificationListener {
 
         NotificationListener() {
             super(notificationHelper);
@@ -123,7 +147,7 @@ public class DownloadManager {
 
         @Override
         protected void completed(BaseDownloadTask task) {
-            Log.e(TAG, "completed: 1" );
+            Log.e(TAG, "completed: 1");
             super.completed(task);
             if (downloadListener != null)
                 downloadListener.completed(
@@ -134,33 +158,26 @@ public class DownloadManager {
                                 COMPLETED,
                                 (int) task.getLargeFileSoFarBytes(),
                                 (int) task.getLargeFileTotalBytes(),
-                                task.getSpeed()));
-            FileDownloader.getImpl().stopForeground(true);
-            removeDownloadFromDownloadList(task.getUrl(), task.getPath());
-            startDownloadList();
-        }
-
-        private void removeDownloadFromDownloadList(String url, String path) {
-            Log.d(TAG, "removeDownloadFromDownloadList: " + taskList.size());
-            if (taskList.size() != 0)
-                for (BaseDownloadTask baseDownloadTask : taskList) {
-                    if (baseDownloadTask.getUrl() == url &&
-                            baseDownloadTask.getPath() == path) {
-                        taskList.remove(baseDownloadTask);
-                    }
-                }
-            Log.e(TAG, "removeDownloadFromDownloadList: " + taskList.size());
+                                task.getSpeed(),
+                                ""));
+            stopNotification();
         }
 
         @Override
         protected void error(BaseDownloadTask task, Throwable e) {
-            Log.e(TAG, "error: 1" );
+            Log.e(TAG, "error: 1");
             super.error(task, e);
             if (downloadListener != null)
-                downloadListener.error(task.getId(), e.getMessage());
+                downloadListener.error(task.getId(),
+                        new ProgressModel(
+                                task.getId(),
+                                task.getFilename(),
+                                ERROR,
+                                (int) task.getLargeFileSoFarBytes(),
+                                (int) task.getLargeFileTotalBytes(),
+                                task.getSpeed(),
+                                e.getMessage()));
             FileDownloader.getImpl().stopForeground(true);
-            removeDownloadFromDownloadList(task.getUrl(), task.getPath());
-            startDownloadList();
         }
 
         @Override
@@ -186,8 +203,6 @@ public class DownloadManager {
         protected boolean interceptCancel(BaseDownloadTask task,
                                           BaseNotificationItem n) {
             Log.e(TAG, "interceptCancel: 1");
-            // in this demo, I don't want to cancel the builder, just show for the test
-            // so return true
             return true;
         }
 
@@ -198,18 +213,38 @@ public class DownloadManager {
         }
 
         @Override
+        protected void paused(BaseDownloadTask task, int soFarBytes, int totalBytes) {
+            super.paused(task, soFarBytes, totalBytes);
+            if (downloadListener != null)
+                downloadListener.pause(
+                        task.getId(),
+                        new ProgressModel(
+                                task.getId(),
+                                task.getFilename(),
+                                PAUSE,
+                                soFarBytes,
+                                totalBytes,
+                                task.getSpeed(),
+                                ""
+                        )
+                );
+        }
+
+        @Override
         protected void pending(BaseDownloadTask task, int soFarBytes, int totalBytes) {
-            Log.e(TAG, "pending: 1" );
+            Log.e(TAG, "pending: 1");
             super.pending(task, soFarBytes, totalBytes);
             if (downloadListener != null)
-                downloadListener.pending(task.getId(),
+                downloadListener.pending(
+                        task.getId(),
                         new ProgressModel(
                                 task.getId(),
                                 task.getFilename(),
                                 PENDING,
                                 soFarBytes,
                                 totalBytes,
-                                task.getSpeed()));
+                                task.getSpeed(),
+                                ""));
         }
 
         @Override
@@ -225,15 +260,38 @@ public class DownloadManager {
                                 PROGRESS,
                                 soFarBytes,
                                 totalBytes,
-                                task.getSpeed()));
+                                task.getSpeed(),
+                                ""));
         }
 
+    }
+
+    /**
+     * Get your download status as String.
+     */
+    public String getDownloadStatus(String url, String path) {
+        switch (FileDownloader.getImpl().getStatus(url, path)) {
+            case FileDownloadStatus.completed:
+                return COMPLETED;
+            case FileDownloadStatus.pending:
+                return PENDING;
+            case FileDownloadStatus.error:
+                return ERROR;
+            case FileDownloadStatus.paused:
+                return PAUSE;
+            case FileDownloadStatus.progress:
+                return PROGRESS;
+            default:
+                return NOT_CHECKED;
+        }
     }
 
     public static class NotificationItem extends BaseNotificationItem {
 
         PendingIntent pendingIntent;
-        NotificationCompat.Builder builder;
+        private NotificationManager mNotificationManager;
+        public static final String NOTIFICATION_CHANNEL_ID = "10001";
+        static NotificationCompat.Builder builder;
 
         private NotificationItem(int id, String title, String desc) {
             super(id, title, desc);
@@ -269,7 +327,7 @@ public class DownloadManager {
                     PendingIntent.FLAG_UPDATE_CURRENT);
 
             builder = new NotificationCompat.
-                    Builder(FileDownloadHelper.getAppContext(), "");
+                    Builder(FileDownloadHelper.getAppContext(), NOTIFICATION_CHANNEL_ID);
 
             builder.setDefaults(Notification.DEFAULT_LIGHTS)
                     .setOngoing(false)
@@ -284,6 +342,25 @@ public class DownloadManager {
 //                    .addAction(0, "Stop", stopAction)
                     .addAction(0, "Pause", pauseAction)
                     .addAction(0, "Start", playAction);
+
+            mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                int importance = NotificationManager.IMPORTANCE_HIGH;
+                NotificationChannel notificationChannel = new NotificationChannel(NOTIFICATION_CHANNEL_ID, "NOTIFICATION_CHANNEL_NAME", importance);
+                notificationChannel.enableLights(true);
+                notificationChannel.setLightColor(Color.RED);
+                notificationChannel.enableVibration(true);
+                notificationChannel.setVibrationPattern(new long[]{100, 200, 300, 400, 500, 400, 300, 200, 400});
+                assert mNotificationManager != null;
+                builder.setChannelId(NOTIFICATION_CHANNEL_ID);
+                mNotificationManager.createNotificationChannel(notificationChannel);
+            }
+            assert mNotificationManager != null;
+        }
+
+        public static Notification getNotificationInstance() {
+            return builder.build();
         }
 
         @Override
@@ -326,9 +403,13 @@ public class DownloadManager {
             }
 
             builder.setProgress(getTotal(), getSofar(), !isShowProgress);
-            getManager().notify(getId(), builder.build());
+            mNotificationManager.notify(getId(), builder.build());
         }
 
+    }
+
+    public void startService() {
+        notificationHelper.clear();
     }
 
 }

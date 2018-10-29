@@ -21,8 +21,8 @@ import com.example.user.downloadmanager.downloadmanager.DownloadListener;
 import com.example.user.downloadmanager.downloadmanager.DownloadManager;
 import com.example.user.downloadmanager.downloadmanager.ProgressModel;
 import com.liulishuo.filedownloader.FileDownloadMonitor;
+import com.liulishuo.filedownloader.FileDownloader;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -71,14 +71,21 @@ public class FileDownloaderFragment extends Fragment implements RecyclerViewAdap
         downloadManager.firstInit(Objects.requireNonNull(getActivity()).getApplication());
         downloadManager.setDownloadListener(new DownloadListener() {
             @Override
-            public void error(int id, String message) {
-                showToastMessage(message);
+            public void error(int id, ProgressModel progressModel) {
+                showToastMessage(progressModel.getDownloadError());
+                updateProgressBar(id, progressModel);
             }
 
             @Override
             public void pending(int id, ProgressModel progressModel) {
                 updateProgressBar(id, progressModel);
                 Log.e(TAG, "pending: ");
+            }
+
+            @Override
+            public void pause(int id, ProgressModel progressModel) {
+                updateProgressBar(id, progressModel);
+                Log.e(TAG, "pause: ");
             }
 
             @Override
@@ -93,6 +100,13 @@ public class FileDownloaderFragment extends Fragment implements RecyclerViewAdap
                 Log.e(TAG, "completed: ");
             }
         });
+    }
+
+    public void getDownloadStatus(){
+        for (DownloadModel downloadModel : downloadList)
+        {
+            Log.e(TAG, "onCreate: "+downloadManager.getDownloadStatus(downloadModel.getUrl(), downloadModel.getPath()) );
+        }
     }
 
     private void updateProgressBar(int id, ProgressModel progressModel) {
@@ -127,29 +141,127 @@ public class FileDownloaderFragment extends Fragment implements RecyclerViewAdap
                     url = getString(R.string.url1),
                     path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url1)).getLastPathSegment(),
                     "https://www.w3schools.com/w3images/avatar6.png",
-                    new ProgressModel(downloadManager.getDownloadId(url, path), "", "", 0, 0, 0)));
+                    new ProgressModel(
+                            downloadManager.getDownloadId(url, path),
+                            "",
+                            "",
+                            0,
+                            0,
+                            0,
+                            "")));
             downloadList.add(new DownloadModel(
                     url = getString(R.string.url2),
                     path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url2)).getLastPathSegment(),
                     "https://www.w3schools.com/w3images/avatar2.png",
-                    new ProgressModel(downloadManager.getDownloadId(url, path), "", "", 0, 0, 0)));
+                    new ProgressModel(
+                            downloadManager.getDownloadId(url, path),
+                            "",
+                            "",
+                            0,
+                            0,
+                            0,
+                            "")));
             downloadList.add(new DownloadModel(
                     url = getString(R.string.url3),
                     path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url3)).getLastPathSegment(),
                     "https://www.w3schools.com/howto/img_avatar2.png",
-                    new ProgressModel(downloadManager.getDownloadId(url, path), "", "", 0, 0, 0)));
+                    new ProgressModel(
+                            downloadManager.getDownloadId(url, path),
+                            "",
+                            "",
+                            0,
+                            0,
+                            0,
+                            "")));
             downloadManager.getDownloadId(url, path);
             downloadList.add(new DownloadModel(
                     url = getString(R.string.url4),
                     path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url4)).getLastPathSegment(),
                     "https://www.w3schools.com/howto/img_avatar.png",
-                    new ProgressModel(downloadManager.getDownloadId(url, path), "", "", 0, 0, 0)));
+                    new ProgressModel(
+                            downloadManager.getDownloadId(url, path),
+                            "",
+                            "",
+                            0,
+                            0,
+                            0,
+                            "")));
             downloadManager.getDownloadId(url, path);
             downloadList.add(new DownloadModel(
                     url = getString(R.string.url5),
                     path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url5)).getLastPathSegment(),
                     "https://www.w3schools.com/w3images/avatar5.png",
-                    new ProgressModel(downloadManager.getDownloadId(url, path), "", "", 0, 0, 0)));
+                    new ProgressModel(
+                            downloadManager.getDownloadId(url, path),
+                            "",
+                            "",
+                            0,
+                            0,
+                            0,
+                            "")));
+            downloadManager.getDownloadId(url, path);
+            downloadList.add(new DownloadModel(
+                    url = getString(R.string.url6),
+                    path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url6)).getLastPathSegment(),
+                    "http://www.ipeoplemanpower.com.ph/image/avatar/sample-avatar.png",
+                    new ProgressModel(
+                            downloadManager.getDownloadId(url, path),
+                            "",
+                            "",
+                            0,
+                            0,
+                            0,
+                            "")));
+            downloadList.add(new DownloadModel(
+                    url = getString(R.string.url7),
+                    path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url7)).getLastPathSegment(),
+                    "https://www.w3schools.com/w3images/avatar2.png",
+                    new ProgressModel(
+                            downloadManager.getDownloadId(url, path),
+                            "",
+                            "",
+                            0,
+                            0,
+                            0,
+                            "")));
+            downloadList.add(new DownloadModel(
+                    url = getString(R.string.url8),
+                    path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url8)).getLastPathSegment(),
+                    "https://www.w3schools.com/howto/img_avatar2.png",
+                    new ProgressModel(
+                            downloadManager.getDownloadId(url, path),
+                            "",
+                            "",
+                            0,
+                            0,
+                            0,
+                            "")));
+            downloadManager.getDownloadId(url, path);
+            downloadList.add(new DownloadModel(
+                    url = getString(R.string.url9),
+                    path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url9)).getLastPathSegment(),
+                    "https://www.w3schools.com/howto/img_avatar.png",
+                    new ProgressModel(
+                            downloadManager.getDownloadId(url, path),
+                            "",
+                            "",
+                            0,
+                            0,
+                            0,
+                            "")));
+            downloadManager.getDownloadId(url, path);
+            downloadList.add(new DownloadModel(
+                    url = getString(R.string.url10),
+                    path = getSaveDir() + "/downloads/" + Uri.parse(getString(R.string.url10)).getLastPathSegment(),
+                    "https://www.w3schools.com/w3images/avatar5.png",
+                    new ProgressModel(
+                            downloadManager.getDownloadId(url, path),
+                            "",
+                            "",
+                            0,
+                            0,
+                            0,
+                            "")));
             downloadManager.getDownloadId(url, path);
         }
         return downloadList;
@@ -176,6 +288,12 @@ public class FileDownloaderFragment extends Fragment implements RecyclerViewAdap
         }
     }
 
+    @Override
+    public void onStop() {
+        super.onStop();
+        downloadManager.startForegroundService();
+    }
+
     private void showToastMessage(String message) {
         Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
     }
@@ -189,18 +307,21 @@ public class FileDownloaderFragment extends Fragment implements RecyclerViewAdap
     public void onStartButtonClick(String url, String path) {
         if (readExternalStorage()) {
             downloadManager.addDownloadTask(url, path);
-            downloadManager.startDownloadList();
+//            downloadManager.startDownloadList();
         } else
             askExternalStoragePermission();
+
+        getDownloadStatus();
     }
 
     @Override
-    public void onPauseButtonClick() {
-        downloadManager.pauseDownloadList();
+    public void onPauseButtonClick(String url, String path) {
+        downloadManager.pause(downloadManager.getDownloadId(url, path));
     }
 
     @Override
     public void onStopButtonClick(String path) {
-        new File(path).delete();
+//        new File(path).delete();
+        FileDownloader.getImpl().unBindService();
     }
 }
